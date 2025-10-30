@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Query {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  userQuestion String
+  normalized   String
+  resultId     String?  // FK to Result
+  traceId      String?  // FK to Trace
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  url         String
+  title       String?
+  domain      String
+  pageAge     DateTime?
+  docType     String?   // html, pdf, blog, policy
+  lastModified DateTime?
+  trustScore  Int
+  contentHash String?   // sha256 of fetched text
+  snippet     String?
+  queryId     String?
+  resultId    String?
+}
+
+model Result {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  answer        String
+  confidence    String    // Low/Medium/High
+  decision      String    // Cite | Abstain
+  internalText  String    // internal policy snippet provided by user
+  externalText  String?   // top curated text
+  diffJson      Json?
+  evidencePackId String?
+}
+
+model EvidencePack {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  jsonBlob    Json
+  pdfUrl      String?
+  sha256      String
+}
+
+model Trace {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  steps     Json     // planner, retriever, curator, verifier, presenter
+}
+
+model ApiCall {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  endpoint  String   // search | news | contents
+  query     String
+  requestId String?
+  latencyMs Int?
+  selectedUrls Json?
+}
+
+model Watch {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  vendor    String
+  topic     String
+  lastRun   DateTime?
+  active    Boolean  @default(true)
+}
