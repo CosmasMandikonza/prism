@@ -1,0 +1,21 @@
+{
+  "name": "prism",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "postinstall": "prisma generate -w apps/web && echo done",
+    "build": "pnpm -C apps/web build",
+    "dev": "pnpm -C apps/web dev",
+    "lint": "pnpm -C apps/web lint",
+    "prisma:generate": "pnpm -C apps/web prisma generate",
+    "prisma:migrate:dev": "pnpm -C apps/web prisma migrate dev",
+    "prisma:deploy": "pnpm -C apps/web prisma migrate deploy"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.1"
+  }
+}

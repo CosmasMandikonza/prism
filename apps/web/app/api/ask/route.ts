@@ -2,24 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { plan } from '../../../../services/agents/planner';
 import { verify } from '../../../../services/agents/verifier';
 import { present } from '../../../../services/agents/presenter';
-import { PrismaClient } from '@prisma/client';
-import { youSearch } from '../../../../packages/you-client';
-const prisma = new PrismaClient();
+import { prisma } from '@/app/lib/prisma';
 
 export async function POST(req: NextRequest) {
   const { claim, vendorDomain, internalText } = await req.json();
   const apiKey = process.env.YOU_API_KEY!;
   if (!apiKey) return NextResponse.json({ error: 'missing api key' }, { status: 500 });
 
-  // Trace and API-call proof logging
   const traceSteps: any[] = [];
-  const start = Date.now();
-
   const { subclaims } = plan(claim);
   traceSteps.push({ step: 'plan', subclaims });
 
+  const started = Date.now();
   const v = await verify(apiKey, vendorDomain, claim || vendorDomain);
-  traceSteps.push({ step: 'verify', summary: { decision: v.decision, confidence: v.confidence, sources: v.sources } });
+  const latency = Date.now() - started;
+  traceSteps.push({ step: 'verify', summary: { decision: v.decision, confidence: v.confidence, sources: v.sources }, latency });
 
   const p = present(internalText || '', v.bestText || '');
   traceSteps.push({ step: 'present', diffLen: p.diff.length });
@@ -49,11 +46,19 @@ export async function POST(req: NextRequest) {
     traceId: trace.id
   }});
 
-  return NextResponse.json({ ...answer, traceId: trace.id, resultId: result.id }, { status: 200 });
+  // record an ApiCall row (for auditor-proof)
+  await prisma.apiCall.create({ data: {
+    endpoint: 'ask-verify',
+    query: `${vendorDomain}::${claim}`,
+    latencyMs: latency,
+    selectedUrls: v.sources as any
+  }});
+
+  return NextResponse.json({ ...answer, traceId: trace.id, resultId: result.id, traceSteps }, { status: 200 });
 }
 
 function summarize(text: string) {
-  // quick heuristic: first 2 sentences
   const s = text.split(/(?<=[.!?])\s/).slice(0,2).join(' ');
   return s || text.slice(0, 320);
 }
+
