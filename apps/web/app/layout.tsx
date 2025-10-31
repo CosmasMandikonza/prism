@@ -1,4 +1,4 @@
-import "./styles.css";
+import "@/styles/globals.css";
 import { ReactNode } from "react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -8,7 +8,6 @@ export const metadata = { title: "Prism", description: "Evidence & Drift Guard" 
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authConfig);
-
   return (
     <html lang="en">
       <body className="min-h-screen">
@@ -25,9 +24,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               {session?.user ? `Signed in as ${session.user.email ?? session.user.name ?? 'user'}` : 'Not signed in'}
             </div>
           </aside>
-          <section className="p-6">
-            {children}
-          </section>
+          <section className="p-6">{children}</section>
         </div>
       </body>
     </html>
